@@ -36,7 +36,11 @@ git sparse-checkout set packages/telemetry packages/schema packages/chord packag
 
 `origin` 仍指向小组组织仓库，分支和提交与远端一致；稀疏检出只影响本地工作区文件，不改变仓库来源和 commit。
 
+<<<<<<< HEAD
 ![S1 当前目录、远端、分支与提交](assets/2.png)
+=======
+![当前目录、远端、分支与提交](assets/2.png)
+>>>>>>> 83e9917bd39c2132068e4b520bbdcb847bbcb328
 
 核对结果：
 
@@ -69,7 +73,11 @@ packages/
 └── tui
 ```
 
+<<<<<<< HEAD
 ![S2 源码目录](assets/3.png)
+=======
+![源码目录](assets/3.png)
+>>>>>>> 83e9917bd39c2132068e4b520bbdcb847bbcb328
 
 ### 1.4 构建验证
 
