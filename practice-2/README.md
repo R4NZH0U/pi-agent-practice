@@ -18,7 +18,7 @@
 
 小组仓库已经 fork 到 **System-Analysis-Homework** 组织下，仓库名为 `pi-hunnu-2026`。GitHub 页面可以看到组织归属、fork 来源 `hunnuOpenSourceSoftware2026/pi-hunnu-2026`，以及最新提交 `c3cc916`。
 
-![小组组织仓库](assets/group-repo.png)
+![小组组织仓库](assets/1.png)
 
 ### 1.2 克隆到本地并确认版本
 
@@ -36,7 +36,7 @@ git sparse-checkout set packages/telemetry packages/schema packages/chord packag
 
 `origin` 仍指向小组组织仓库，分支和提交与远端一致；稀疏检出只影响本地工作区文件，不改变仓库来源和 commit。
 
-![S1 当前目录、远端、分支与提交](assets/S1_clone_info.png)
+![当前目录、远端、分支与提交](assets/2.png)
 
 核对结果：
 
@@ -69,7 +69,7 @@ packages/
 └── tui
 ```
 
-![S2 源码目录](assets/S2_source_tree.png)
+![源码目录](assets/3.png)
 
 ### 1.4 构建验证
 
