@@ -5,10 +5,10 @@
 - **小组组织**：System-Analysis-Homework
 - **小组代码仓库**：<https://github.com/System-Analysis-Homework/pi-hunnu-2026>
 - **实际 clone 地址**：`https://github.com/System-Analysis-Homework/pi-hunnu-2026.git`
-- **源码提交**：`c3cc91632d0a1950fb122605b190233f2aa0006e`（`main` 分支）
-- **分析版本**：Pi 1.5.2（`packages/*/package.json` 的 `version` 均为 `1.5.2`；根 `package.json` 的 `version` 为 `0.0.3`，不是包版本）
-- **本机环境**：Windows 11 家庭中文版（10.0.26100，build 26100）/ PowerShell 5.1.26100.6725 / Node.js v24.15.0 / npm 11.12.1 / Git 2.54.0.windows.1
-- **本人重点分析模块**：`coding-agent`、`agent`、`ai`
+- **源码提交**：`c3cc91632d0a1950fb122605b190233f2aa0006e`
+- **分析版本**：Pi 1.5.2（`package.json` 的 `version` 为 `1.5.2`）
+- **本机环境**：Windows 11/ PowerShell 5.1 / Node.js v24.15.0 / npm 11.12.1 / Git 2.54.0
+- **本人重点分析模块**：`telemetry`、`schema`、`chord`、`tui`、`durable`、`env`
 
 ---
 
@@ -20,38 +20,13 @@
 
 ![小组组织仓库](assets/1.png)
 
+
 ### 1.2 克隆到本地并确认版本
 
-仓库约 110 MB，为了只检出本次分析需要的 `packages` 与 `scripts`，我使用了浅克隆 + 稀疏检出：
+已检查 origin 指向小组组织内的仓库，当前分支为 main，并把完整提交编号记录到报告中。
 
-```powershell
-git clone --depth 1 --filter=blob:none --sparse `
-  https://github.com/System-Analysis-Homework/pi-hunnu-2026.git `
-  D:\pi-hunnu-2026
-cd D:\pi-hunnu-2026
-git sparse-checkout set packages/telemetry packages/schema packages/chord packages/tui `
-  packages/codemode packages/mcp packages/ai packages/durable packages/env `
-  packages/agent packages/coding-agent packages/evals scripts
-```
-
-`origin` 仍指向小组组织仓库，分支和提交与远端一致；稀疏检出只影响本地工作区文件，不改变仓库来源和 commit。
-
-<<<<<<< HEAD
-![S1 当前目录、远端、分支与提交](assets/2.png)
-=======
 ![当前目录、远端、分支与提交](assets/2.png)
->>>>>>> 83e9917bd39c2132068e4b520bbdcb847bbcb328
 
-核对结果：
-
-| 检查项 | 结果 |
-| --- | --- |
-| 当前目录 | `D:\pi-hunnu-2026` |
-| `origin` fetch | `https://github.com/System-Analysis-Homework/pi-hunnu-2026.git` |
-| `origin` push | `https://github.com/System-Analysis-Homework/pi-hunnu-2026.git` |
-| 当前分支 | `main` |
-| HEAD 完整提交 | `c3cc91632d0a1950fb122605b190233f2aa0006e` |
-| `git status --short` | 无输出，工作区干净 |
 
 ### 1.3 源码目录
 
@@ -73,41 +48,8 @@ packages/
 └── tui
 ```
 
-<<<<<<< HEAD
-![S2 源码目录](assets/3.png)
-=======
 ![源码目录](assets/3.png)
->>>>>>> 83e9917bd39c2132068e4b520bbdcb847bbcb328
 
-### 1.4 构建验证
-
-在仓库根目录执行：
-
-```powershell
-npm install --ignore-scripts --no-audit --no-fund
-npm run build
-```
-
-本机实际结果：安装 287 个包，构建 **exit code 0**。构建末尾输出：
-
-```text
-> @earendil-works/pi-coding-agent@1.5.2 build
-> npm run build:unbundled && node ../../scripts/build-coding-agent-bundle.mjs
-...
-Built packages\coding-agent\dist\bundle (84 files, 9.4 MiB)
-```
-
-`ai` 的构建还实际生成了模型目录数据：
-
-```text
-Generated provider catalogs and src/models.generated.ts
-Generated JSON model values under src/providers/data/
-Total tool-capable models: 1692
-Reasoning-capable models: 1454
-Generated model data is valid.
-```
-
----
 
 ## 2. 模块分析
 
@@ -183,159 +125,34 @@ Generated model data is valid.
 
 ### 问题 1：根目录与子模块的 `npm run build` 分别读取什么配置、执行什么工作？
 
-**根目录**的 `npm run build` 读取根 `package.json` 的 `scripts.build`。它没有使用 `npm workspaces` 的并行构建，而是手写了一条固定顺序的 `cd ... && npm run build && ...` 命令链，从 `telemetry` 一直执行到 `coding-agent`。它本身不读 `tsconfig`，真正的编译配置由每个子模块读取。
+**根目录的 `npm run build`**：
+  - 根 package.json:15 是一个硬编码的 cd packages/<x> && npm run build 串联脚本，本身不读取任何构建配置文件，只负责按固定顺序依次调用各子包的 build。
 
-**子模块**的 `npm run build` 读取自己的 `package.json` 和 `tsconfig.build.json`：
+**子模块的 `npm run build`**：
+  - 绝大多数包是 tsc -p tsconfig.build.json，即读取本包的 tsconfig.build.json；该文件 extends 根 tsconfig.base.json（target ES2024、module Node16、strict、declaration、sourceMap 等），并设置 outDir: ./dist、rootDir: ./src，把 src/**/*.ts 编译成 dist/ 下的 JS、.d.ts 和 sourcemap。
 
-- `telemetry/schema/chord/tui/codemode/mcp/durable/env/agent` 基本都是 `tsc -p tsconfig.build.json`，把 `src/**/*.ts` 编译到 `dist/`，生成 ESM JS、`.d.ts`、`.js.map`、`.d.ts.map`。
-- `ai` 多一步模型目录生成：`generate-models` 抓取外部模型目录，生成 `src/models.generated.ts` 和 `src/providers/data/*.json`；`build:offline` 再校验、编译，并把 provider data 复制到 `dist/providers/data`。
-- `coding-agent` 先 `tsc` 生成 unbundled `dist`，加可执行位、复制主题/图片/HTML 模板；再用 esbuild 打包成 `dist/bundle`，并额外生成 OAuth、Bedrock、codemode、image-resize 等 lazy entry。
-- `env` 的根 build 只编译 TypeScript；Rust daemon 是单独的 `build:daemon`。`tui` 的原生模块、`coding-agent` 的 Bun 二进制也是单独脚本。
-
-所以，根 build 负责“按顺序调度”，子模块 build 负责“按各自的 tsconfig 和脚本生成 dist”。
+**特殊包**：
+  - ai：先跑 catalog/generate.ts --strict 生成模型目录，再 check:model-data → tsc → 用 scripts/package-files.mjs 清理并复制 src/providers/data 到 dist/providers。
+  - coding-agent：先 tsc 并把 dist/cli.js、dist/rpc-entry.js 设为可执行、复制主题/图片/HTML 模板，再用 scripts/build-coding-agent-bundle.mjs 生成 dist/bundle/cli.js（bin.pi 指向它）。
+  - tui 的原生二进制由根脚本 build:native:win32/darwin/linux 单独构建，不在 build 里。
 
 ### 问题 2：构建顺序和模块依赖有什么关系？相邻构建的模块是否一定互相依赖？
 
-构建顺序与依赖方向一致：**被依赖的包先构建，使用它的包后构建**。例如：
-
-- `schema`、`telemetry` 没有内部依赖，排在最前；`chord` 依赖它们，排在后面。
-- `chord`、`ai` 先于 `durable`，因为 `durable` 同时依赖两者。
-- `agent` 先于 `coding-agent`，因为 coding-agent 依赖 agent core。
-- `codemode`、`mcp`、`tui` 都先于 `coding-agent`，因为 coding-agent 直接依赖它们。
-
-但**相邻构建的模块不一定互相依赖**。例如：
-
-- `chord → tui`：tui 不依赖 chord，二者只是相邻；
-- `tui → codemode`、`codemode → mcp`、`mcp → ai`：这些相邻对都没有直接依赖；
-- `env → agent`：env 与 agent 没有直接依赖；
-- `durable`、`env` 排在 `coding-agent` 前面，但 coding-agent 的 `package.json` 并不依赖 durable/env；它们只是发布包集合中需要一起构建的独立分支。
-
-因此，根 build 的顺序是一个**满足依赖约束的线性调度**，不是“相邻模块必须互相依赖”的链条。这样安排的好处是简单、可重复，并且保证 `tsc`/bundle 在前置包 `dist` 存在后再执行；代价是构建时间不能像 workspaces 并行调度那样压缩。
+- 根 build 的顺序是：telemetry → schema → chord → tui → codemode → mcp → ai → durable → env → agent → coding-agent。
+- 这个顺序保证被依赖方先于使用方构建：例如 chord 在 schema/telemetry 之后、ai 在 schema/telemetry 之后、durable 在 chord/ai/codemode 之后、coding-agent 在 agent/ai/codemode/mcp/tui 之后（coding-- agent/tsconfig.build.json 的 paths 直接指向 ../agent/dist、../ai/dist、../tui/dist，必须是已构建产物）。
+- 相邻构建的模块不一定互相依赖。 反例：
+- schema → chord 相邻且 chord 确实依赖 schema，但 tui 紧跟在 chord 后面，tui 与 chord 之间没有依赖。
+- env → agent 相邻，但 agent 只依赖 ai/schema，与 env、durable、chord 都无关；它被放在后面只是为了用一个固定的拓扑序，而不是因为依赖 env。
+- **结论：构建顺序是依赖关系的一个拓扑排序的超集——顺序能保证依赖成立，但顺序相邻不代表依赖成立。**
 
 ### 问题 3：选择一条涉及至少三个模块的依赖路径，说明这些模块如何分工
 
-选择路径：
+路径：coding-agent → agent → ai → schema（ai 同时依赖 telemetry，可看作 … → ai → telemetry）。
+- coding-agent（使用方最顶层）： 提供用户真正运行的 pi CLI 与 TUI/RPC 模式、read/bash/edit/write 工具、会话与扩展管理；它把 agent 循环、模型调用、沙箱执行、MCP 客户端和终端渲染组装成一个可执行产品。
+- agent（编排层）： 维护 agent 状态（消息、附件、工具调用）、定义执行循环与事件流，并把工具调用结果回传给下一轮模型请求；它自己不做模型协议细节，而是调用 ai。
+- ai（模型访问层）： 统一各家 LLM 的请求/响应与流式协议、provider 配置与鉴权、token 与成本统计，并把上下文在模型间交接；它依赖 schema 校验工具参数与结构化输出，依赖 telemetry 记录调用指标。
+- schema（校验基础层）： 把 JSON Schema 编译成无 eval 的闭包校验器，供上层在信任边界（模型返回的工具参数、配置等）做校验。
+因此三者是“产品组装 → agent 编排 → 模型接口 → 结构校验”的分层关系，改上层实现不需要改下层契约。
 
-```text
-coding-agent → agent → ai → schema
-                         └→ telemetry
-```
-
-这是“使用方 → 被依赖方”的方向，涉及 5 个模块：
-
-1. **`coding-agent`（应用层）**：面向用户的 CLI/TUI/RPC 入口，解析命令、加载扩展/skills/themes、管理 session 和工具，把用户任务交给 agent core，并把事件渲染成终端界面。它还直接使用 `tui` 做界面、`codemode` 做沙箱、`mcp` 接外部工具。
-2. **`agent`（控制层）**：实现有状态的 agent loop，维护 `AgentMessage` 与 LLM message 的转换，调用 `ai` 的流式接口，执行工具调用，并向 UI 发出 `agent_start`、`turn_start`、`message_*`、`tool_*` 等事件。它不负责具体 provider 的 HTTP 细节。
-3. **`ai`（模型访问层）**：把不同 provider 统一成模型接口，处理认证、模型目录、token/成本、流式响应、工具调用和图片/分类模型；它用 `schema` 描述/校验工具参数，用 `telemetry` 记录请求 span。
-4. **`schema`（数据契约层）**：提供 JSON Schema builder、编译器和校验器，让工具参数、Chord 契约等有可序列化的 schema 和运行时校验，不依赖 `eval`。
-5. **`telemetry`（可观测层）**：提供显式的 span/metrics 契约，让 `ai` 等模块记录模型请求和工具调用，而不用绑定某个 telemetry 后端。
-
-这条路径体现了“**界面/应用 → 控制循环 → 模型访问 → 数据契约/可观测**”的分工：上层只组织任务和交互，下层负责可复用的模型、schema 和 telemetry 能力。`coding-agent` 不直接实现 LLM 请求，`agent` 不直接处理 provider 认证，`ai` 不直接决定 UI，这样后续替换模型、增加工具或接入新界面时，改动可以限制在对应层。
 
 ---
-
-## 4. 实际版本差异与边界
-
-1. **实际模块数**：任务表列出 11 个模块；实际 `packages/` 下还有 `evals`（`@earendil-works/pi-evals`，private，只有 `eval`/`test` 脚本，没有 `build`），根 `build` 不包含它。本报告只把 11 个构建模块画进依赖图。
-2. **`apps/`**：仓库还有 `apps/p2`、`apps/p2-mac`、`apps/p3`，但它们不属于 `packages/` 的 11 个模块，也不在根 `build` 链中，本次不分析。
-3. **根 `tsconfig.json` 的 `agent-old` 路径**：根 `tsconfig.json` 里还保留了 `@earendil-works/pi-agent-old` 的 path 映射，但当前 `packages/` 中没有 `agent-old` 目录；这是类型检查配置中的历史残留，不影响本次 11 个模块的 build。
-4. **未纳入根 build 的可选构建**：`env` 的 Rust daemon、`tui` 的 native 模块、`coding-agent` 的 Bun 单文件二进制，都有独立脚本；本次实际执行的是根 `npm run build`，所以只验证了 TypeScript 编译和 coding-agent 的 esbuild bundle，没有声称已经构建了这三个可选产物。
-
----
-
-## 5. 证据索引
-
-- 根构建脚本：`package.json` 的 `scripts.build`、`scripts.build:offline`
-- 共享编译配置：`tsconfig.base.json`、`tsconfig.json`
-- 模块脚本与依赖：
-  - `packages/telemetry/package.json`
-  - `packages/schema/package.json`
-  - `packages/chord/package.json`
-  - `packages/tui/package.json`
-  - `packages/codemode/package.json`
-  - `packages/mcp/package.json`
-  - `packages/ai/package.json`
-  - `packages/durable/package.json`
-  - `packages/env/package.json`
-  - `packages/agent/package.json`
-  - `packages/coding-agent/package.json`
-- 构建配置：
-  - `packages/*/tsconfig.build.json`
-  - `packages/durable/tsconfig.build.json`、`packages/env/tsconfig.build.json`
-  - `packages/agent/tsconfig.build.json`、`packages/coding-agent/tsconfig.build.json`
-- 特殊构建脚本：
-  - `scripts/build-coding-agent-bundle.mjs`
-  - `scripts/package-files.mjs`
-  - `packages/ai/catalog/generate.ts`
-  - `packages/env/daemon/Cargo.toml`
-- 源码入口：
-  - `packages/telemetry/src/index.ts`
-  - `packages/schema/src/index.ts`
-  - `packages/chord/src/index.ts`
-  - `packages/tui/src/tui.ts`
-  - `packages/codemode/src/index.ts`
-  - `packages/mcp/src/client.ts`
-  - `packages/ai/src/index.ts`
-  - `packages/durable/src/index.ts`
-  - `packages/env/src/index.ts`
-  - `packages/agent/src/index.ts`
-  - `packages/coding-agent/src/cli.ts`
-
----
-
-## 附：Mermaid 图源
-
-```mermaid
-flowchart TB
-  subgraph APP["应用层"]
-    coding["coding-agent"]
-  end
-
-  subgraph L3["L3 远程执行"]
-    env["env"]
-  end
-
-  subgraph L2["L2 编排 / 持久化"]
-    durable["durable"]
-    agent["agent"]
-  end
-
-  subgraph L1["L1 运行时 / 模型接口"]
-    chord["chord"]
-    ai["ai"]
-  end
-
-  subgraph L0C["L0 能力组件"]
-    tui["tui"]
-    codemode["codemode"]
-    mcp["mcp"]
-  end
-
-  subgraph L0F["L0 基础契约"]
-    schema["schema"]
-    telemetry["telemetry"]
-  end
-
-  coding --> agent
-  coding --> ai
-  coding --> codemode
-  coding --> mcp
-  coding --> tui
-
-  env --> chord
-  env --> durable
-
-  agent --> ai
-  agent --> schema
-
-  durable --> chord
-  durable --> ai
-  durable --> codemode
-  durable --> schema
-  durable --> telemetry
-
-  chord --> schema
-  chord --> telemetry
-
-  ai --> schema
-  ai --> telemetry
-```
