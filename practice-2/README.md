@@ -5,9 +5,9 @@
 - **小组组织**：System-Analysis-Homework
 - **小组代码仓库**：<https://github.com/System-Analysis-Homework/pi-hunnu-2026>
 - **实际 clone 地址**：`https://github.com/System-Analysis-Homework/pi-hunnu-2026.git`
-- **源码提交**：`c3cc91632d0a1950fb122605b190233f2aa0006e`
-- **分析版本**：Pi 1.5.2 monorepo（`package.json` 中 `version = 1.5.2`）
-- **本机环境**：Windows 11 / PowerShell 5.1 / Node.js v24.15.0 / npm / Git 2.54.0
+- **源码提交**：`c3cc91632d0a1950fb122605b190233f2aa0006e`（`main` 分支）
+- **分析版本**：Pi 1.5.2（`packages/*/package.json` 的 `version` 均为 `1.5.2`；根 `package.json` 的 `version` 为 `0.0.3`，不是包版本）
+- **本机环境**：Windows 11 家庭中文版（10.0.26100，build 26100）/ PowerShell 5.1.26100.6725 / Node.js v24.15.0 / npm 11.12.1 / Git 2.54.0.windows.1
 - **本人重点分析模块**：`coding-agent`、`agent`、`ai`
 
 ---
@@ -18,7 +18,7 @@
 
 小组仓库已经 fork 到 **System-Analysis-Homework** 组织下，仓库名为 `pi-hunnu-2026`。GitHub 页面可以看到组织归属、fork 来源 `hunnuOpenSourceSoftware2026/pi-hunnu-2026`，以及最新提交 `c3cc916`。
 
-![小组组织仓库](assets/group-repo.png)
+![小组组织仓库](assets/1.png)
 
 ### 1.2 克隆到本地并确认版本
 
@@ -36,7 +36,7 @@ git sparse-checkout set packages/telemetry packages/schema packages/chord packag
 
 `origin` 仍指向小组组织仓库，分支和提交与远端一致；稀疏检出只影响本地工作区文件，不改变仓库来源和 commit。
 
-![S1 当前目录、远端、分支与提交](assets/S1_clone_info.png)
+![S1 当前目录、远端、分支与提交](assets/2.png)
 
 核对结果：
 
@@ -69,7 +69,7 @@ packages/
 └── tui
 ```
 
-![S2 源码目录](assets/S2_source_tree.png)
+![S2 源码目录](assets/3.png)
 
 ### 1.4 构建验证
 
@@ -98,8 +98,6 @@ Total tool-capable models: 1692
 Reasoning-capable models: 1454
 Generated model data is valid.
 ```
-
-完整构建记录摘要见 [`assets/build-output.txt`](assets/build-output.txt)。
 
 ---
 
@@ -150,17 +148,24 @@ Generated model data is valid.
 
 ### 2.4 模块层级与依赖关系图
 
-图为“**使用方 → 被依赖方**”方向；实线是直接内部依赖，虚线是 `chord` 的可选外部 peer。节点编号对应根 `build` 顺序。
+图为“**使用方 → 被依赖方**”方向，按层从上到下排列：越靠上越接近使用方，越靠下越接近被依赖方。图中只画 `package.json` 中 `dependencies` 的直接内部依赖；`peerDependencies`、开发依赖和测试依赖不进入这张图。
 
-![模块层级与依赖关系图](assets/dependency-graph.png)
+![模块层级与依赖关系图](assets/deps.png)
 
-可编辑图源：[`dependency-graph.mmd`](assets/dependency-graph.mmd)
+可编辑图源：[`assets/deps.mermaid`](assets/deps.mermaid)
 
-**层级划分依据**：先按直接内部依赖的最长路径深度分层，再结合职责命名。L0 是“没有内部包依赖”的基础能力；L1 是建立在 L0 上的运行时/模型访问层；L2 是 agent core 与持久化 harness；L3 是把这些能力组装成应用或远程执行环境的集成层。`tui`、`codemode`、`mcp` 虽然职责不同，但都没有内部依赖，所以放在 L0，这不代表它们不重要。
+**层级划分依据**：按直接内部依赖的最长路径深度分层，再结合职责命名。
+
+- **应用层**：`coding-agent`，最终 CLI 产品，依赖 `agent`、`ai`、`codemode`、`mcp`、`tui`。
+- **L3 远程执行**：`env`，依赖 `chord`、`durable`。
+- **L2 编排 / 持久化**：`agent`（依赖 `ai`、`schema`）、`durable`（依赖 `chord`、`ai`、`codemode`、`schema`、`telemetry`）。
+- **L1 运行时 / 模型接口**：`chord`、`ai`，都只依赖 `schema`、`telemetry`。
+- **L0 能力组件**：`tui`、`codemode`、`mcp`，无内部依赖，可独立使用。
+- **L0 基础契约**：`schema`、`telemetry`，无内部依赖。
 
 **可选/开发依赖区分**：
 
-- `chord` 的 `peerDependencies` 是 `esbuild`、`react`、`ws`，且 `peerDependenciesMeta` 都标了 `optional: true`；它们只在 `/plugins`、`/react`、`/http`、`/tui/launcher` 等入口用到，不是内部模块。图中用虚线单独标出。
+- `chord` 的 `peerDependencies` 是 `esbuild`、`react`、`ws`，且 `peerDependenciesMeta` 都标了 `optional: true`；它们只在 `/plugins`、`/react`、`/http`、`/tui/launcher` 等入口用到，不是内部模块，因此不画入依赖图。
 - `vitest`、`@types/*`、`chalk`、`@xterm/headless` 等是测试/类型/开发依赖，不进入运行时依赖图，也不画成实线。
 - `packages/evals` 是私有评测包，根 build 不构建它；`apps/` 下的 `p2`、`p2-mac`、`p3` 也不在根 `build` 链中，因此没有画入 11 个模块的依赖图。
 
@@ -273,52 +278,56 @@ coding-agent → agent → ai → schema
 
 ```mermaid
 flowchart TB
-  subgraph L0["L0 基础能力层（无内部包依赖）"]
-    direction LR
-    telemetry["① telemetry<br/>pi-telemetry"]
-    schema["② schema<br/>pi-schema"]
-    tui["④ tui<br/>pi-tui"]
-    codemode["⑤ codemode<br/>pi-codemode"]
-    mcp["⑥ mcp<br/>pi-mcp"]
+  subgraph APP["应用层"]
+    coding["coding-agent"]
   end
 
-  subgraph L1["L1 核心运行时与契约层"]
-    direction LR
-    chord["③ chord<br/>@earendil-works/chord"]
-    ai["⑦ ai<br/>pi-ai"]
+  subgraph L3["L3 远程执行"]
+    env["env"]
   end
 
-  subgraph L2["L2 智能体与持久化层"]
-    direction LR
-    agent["⑩ agent<br/>pi-agent-core"]
-    durable["⑧ durable<br/>pi-durable"]
+  subgraph L2["L2 编排 / 持久化"]
+    durable["durable"]
+    agent["agent"]
   end
 
-  subgraph L3["L3 应用集成层"]
-    direction LR
-    env["⑨ env<br/>pi-env"]
-    codingAgent["⑪ coding-agent<br/>pi-coding-agent"]
+  subgraph L1["L1 运行时 / 模型接口"]
+    chord["chord"]
+    ai["ai"]
   end
 
-  chord --> schema
-  chord --> telemetry
-  ai --> schema
-  ai --> telemetry
+  subgraph L0C["L0 能力组件"]
+    tui["tui"]
+    codemode["codemode"]
+    mcp["mcp"]
+  end
+
+  subgraph L0F["L0 基础契约"]
+    schema["schema"]
+    telemetry["telemetry"]
+  end
+
+  coding --> agent
+  coding --> ai
+  coding --> codemode
+  coding --> mcp
+  coding --> tui
+
+  env --> chord
+  env --> durable
+
   agent --> ai
   agent --> schema
+
   durable --> chord
   durable --> ai
   durable --> codemode
   durable --> schema
   durable --> telemetry
-  env --> chord
-  env --> durable
-  codingAgent --> agent
-  codingAgent --> ai
-  codingAgent --> codemode
-  codingAgent --> mcp
-  codingAgent --> tui
 
-  peers["外部可选 peer：esbuild / ws / react"]
-  chord -. "可选 peer（仅 /plugins、/http、/react 等入口）" .-> peers
+  chord --> schema
+  chord --> telemetry
+
+  ai --> schema
+  ai --> telemetry
 ```
