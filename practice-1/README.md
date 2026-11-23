@@ -2,10 +2,10 @@
 
 ## 1. 实践信息
 
-- 姓名：苏可
-- GitHub：`sophiasu051119-glitch`
-- 日期：2026 年 11 月
-- Pi 版本：`1.5.0`
+- 姓名：冉鹏洲
+- GitHub：`R4NZH0U`
+- 日期：2026 年 11 月 16 日
+- Pi 版本：`1.5.2`
 - 操作系统：Windows 11
 - Node.js：`v24.21.0`
 - npm：`11.19.0`
@@ -21,31 +21,31 @@
 npm install -g --ignore-scripts @earendil-works/pi-coding-agent
 ```
 
-安装后运行 `pi --version`，得到 `1.5.0`。随后在本仓库目录启动 Pi，确认程序能够正常进入交互界面。
+安装后运行 `pi --version`，得到 `1.5.2`。随后在本仓库目录启动 Pi，确认程序能够正常进入交互界面。
 
-![Pi 安装并启动](screenshots/S1-install-start.png)
+![Pi 安装并启动](screenshots/1.png)
 
 ### 2.2 配置模型并完成会话
 
-我在 `/login` 中选择账户登录，并通过 OpenAI 账户完成授权。登录后 Pi 自动选择 `gpt-6.1-sol`，初始思考级别为 `low`。我发送“你好，请用一句话介绍你自己”，模型能够正常回复。报告和仓库中没有保存 `auth.json`、授权链接或任何凭据。
+我在 `/login` 中选择API登录，并通过 deepseekAPI 完成授权。登录后 Pi 自动选择 `deepseek-v4-pro`，初始思考级别为 `low`。我发送“你好，请用一句话介绍你自己”，模型能够正常回复。报告和仓库中没有保存 `auth.json`、授权链接或任何凭据。
 
-![第一次模型会话](screenshots/S2-first-chat.png)
+![第一次模型会话](screenshots/2.png)
 
 ### 2.3 切换模型和思考级别
 
-我先用 `/model` 将模型从 `gpt-6.1-sol` 切换为 `gpt-6-sol`，并用“请用一句话解释持续集成”确认新模型可以正常会话。切换完成后，状态栏显示 `gpt-6-sol`，当时思考级别为 `off`。
+我先用 `/model` 将模型从 `deepseek-v4-pro` 切换为 `deepseek-flash`，并用“请用一句话解释持续集成”确认新模型可以正常会话。切换完成后，状态栏显示 `deepseek-flash`，当时思考级别为 `low`。
 
-![模型切换后状态](screenshots/S3-model-switch.png)
+![模型切换后状态](screenshots/3.png)
 
 随后使用 `/thinking` 将思考级别调整为 `high`。低或关闭思考适合简单问答，响应更快；较高思考级别更适合多步推理、复杂规划和深入排查，但通常需要更长时间。
 
-![思考级别切换为 high](screenshots/S3-thinking-high.png)
+![思考级别切换为 high](screenshots/4.png)
 
 ### 2.4 引用代码文件
 
 我创建了 `hello.py`，其中 `add(a, b)` 返回两个参数的和，最后执行 `print(add(2, 3))`。在 Pi 中通过 `@hello.py` 引用文件，并询问程序功能。回复正确识别了 `add` 函数，运行结果为 `5`。
 
-![引用 hello.py](screenshots/S4-file-reference.png)
+![引用 hello.py](screenshots/5.png)
 
 ### 2.5 粘贴图片并测试识别
 
@@ -55,7 +55,7 @@ npm install -g --ignore-scripts @earendil-works/pi-coding-agent
 
 我使用 `Alt+V` 粘贴剪贴板图像。Pi 将图片保存为 `pi-clipboard-...png` 临时文件，说明输入来自剪贴板而不是手动输入原文件路径。模型识别出了蓝色圆角方块和数字 7。
 
-![图片输入测试](screenshots/S5-image-input.png)
+![图片输入测试](screenshots/6.png)
 
 ### 2.6 安装并使用插件
 
@@ -67,21 +67,19 @@ pi install npm:pi-web-access
 
 安装后，`pi list` 显示用户级包 `npm:pi-web-access`，路径为 `C:\Users\Sophi\.pi\agent\npm\node_modules\pi-web-access`。我重新启动 Pi，确认启动信息出现该扩展，并调用一个最小网页读取任务。
 
-![插件安装来源](screenshots/S6-plugin-list.png)
+![插件安装来源](screenshots/7.png)
 
 我让插件获取 `https://example.com` 的网页标题。画面中出现了 `fetch` 工具调用，最后得到 `Example Domain`，说明插件不仅已经安装，而且能够实际完成网页读取。
 
-![插件网页读取结果](screenshots/S6-plugin-call.png)
+![插件网页读取结果](screenshots/8.png)
 
 ### 2.7 安装并调用 PPT Skill
 
-按照选做任务，我从 `anthropics/skills` 仓库下载 `skills/pptx` 完整目录，并安装到当前项目的 `.pi/skills/pptx`。目录共 56 个文件，保留了 `SKILL.md`、`LICENSE.txt` 和 `scripts` 等支持文件。下载时记录的源 commit 为 `2c5958ecac7cee2b583967a2c4981d0f4a75c579`。
-
-![PPT Skill 目录结构](screenshots/S7-pptx-files.png)
+按照选做任务，我从老师的仓库下载 `skills/pptx` 完整目录，并安装到当前项目的 `.pi/skills/pptx`。目录共 56 个文件，保留了 `SKILL.md`、`LICENSE.txt` 和 `scripts` 等支持文件。
 
 重新启动 Pi 后，我检查技能发现结果，并使用 `/skill:pptx` 询问技能名称、用途和所在目录。
 
-![PPT Skill 调用](screenshots/S8-pptx-call.png)
+![PPT Skill 调用](screenshots/9.png)
 
 ## 3. 问题与处理
 
