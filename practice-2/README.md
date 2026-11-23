@@ -6,9 +6,9 @@
 - **小组代码仓库**：<https://github.com/System-Analysis-Homework/pi-hunnu-2026>
 - **实际 clone 地址**：`https://github.com/System-Analysis-Homework/pi-hunnu-2026.git`
 - **源码提交**：`c3cc91632d0a1950fb122605b190233f2aa0006e`
-- **分析版本**：Pi 1.5.2 monorepo（`package.json` 中 `version = 1.5.2`）
-- **本机环境**：Windows 11 / PowerShell 5.1 / Node.js v24.15.0 / npm / Git 2.54.0
-- **本人重点分析模块**：`coding-agent`、`agent`、`ai`
+- **分析版本**：
+- **本机环境**：Windows  / PowerShell  / Node.js  / npm / Git 
+- **本人重点分析模块**：
 
 ---
 
