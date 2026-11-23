@@ -1,0 +1,56 @@
+%% Module dependency graph for pi-hunnu-2026
+%% Arrow direction: consumer --> dependency. Layers run top (consumer) to bottom (dependency).
+%% Only direct internal dependencies from packages/*/package.json "dependencies" are shown.
+flowchart TB
+    subgraph APP["应用层"]
+        coding["coding-agent"]
+    end
+
+    subgraph L3["L3 远程执行"]
+        env["env"]
+    end
+
+    subgraph L2["L2 编排 / 持久化"]
+        durable["durable"]
+        agent["agent"]
+    end
+
+    subgraph L1["L1 运行时 / 模型接口"]
+        chord["chord"]
+        ai["ai"]
+    end
+
+    subgraph L0C["L0 能力组件"]
+        tui["tui"]
+        codemode["codemode"]
+        mcp["mcp"]
+    end
+
+    subgraph L0F["L0 基础契约"]
+        schema["schema"]
+        telemetry["telemetry"]
+    end
+
+    coding --> agent
+    coding --> ai
+    coding --> codemode
+    coding --> mcp
+    coding --> tui
+
+    env --> chord
+    env --> durable
+
+    agent --> ai
+    agent --> schema
+
+    durable --> chord
+    durable --> ai
+    durable --> codemode
+    durable --> schema
+    durable --> telemetry
+
+    chord --> schema
+    chord --> telemetry
+
+    ai --> schema
+    ai --> telemetry
