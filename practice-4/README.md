@@ -142,6 +142,8 @@ node .\packages\coding-agent\dist\cli.js
 
 ### 运行流程简图
 
+Mermaid 源文件：[assets/flow.mmd](assets/flow.mmd)
+
 ```mermaid
 flowchart TD
     U[用户输入] --> CA[coding-agent：CLI/TUI，提供 read 等工具]
