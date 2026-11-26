@@ -17,7 +17,7 @@ const response = await streamFunction(config.model, llmContext, {
 
 每次执行到这里，Agent 都准备把当前上下文交给模型调用函数。
 
-![截图1](assets/04-Pi-Agent-runtime-trace/image-02.png)
+![截图1](assets/1.png)
 
 **截图要求 S1：**  显示编辑器中的 agent-loop.ts 文件名、行号，以及新增的 [P4] Agent 即将请求模型 日志。画面中应同时看到日志下方的 await streamFunction(...)。
 
@@ -33,7 +33,7 @@ for (const result of toolResults) {
 }
 ```
 
-![截图2](assets/04-Pi-Agent-runtime-trace/image-01.png)
+![截图2](assets/2.png)
 
 **截图要求 S2：**  显示 agent-loop.ts 中的 for 循环、`currentContext.messages.push(result)` 和紧接着新增的 [P4] 工具结果已加入上下文 日志。
 
@@ -45,7 +45,9 @@ for (const result of toolResults) {
 npm run build
 ```
 
-![截图3](assets/04-Pi-Agent-runtime-trace/image-03.png)
+![截图3](assets/3.1.png)
+
+![截图3](assets/3.2.png)
 
 **截图要求 S3：**  显示项目根目录中的 npm run build 命令、构建结束后返回命令提示符，以及紧接着运行 $LASTEXITCODE 得到的 0。输出过长时可分两张截图，分别标为 S3a 和 S3b。
 
@@ -54,11 +56,11 @@ npm run build
 ```powershell
 node .\packages\coding-agent\dist\cli.js
 ```
-![截图4](assets/04-Pi-Agent-runtime-trace/image-04.png)
+![截图4](assets/4.1.png)
 
 两行 `[P4]` 日志会写到终端，可能和 Pi 的交互界面混在一起。运行时留意终端输出，记录出现的顺序。
 
-![截图4](assets/04-Pi-Agent-runtime-trace/image-05.png)
+![截图4](assets/4.2.png)
 
 **截图要求 S4：**  显示执行 node .\packages\coding-agent\dist\cli.js 的命令和成功打开的 Pi 交互界面。
 
@@ -81,7 +83,11 @@ node .\packages\coding-agent\dist\cli.js
 
 实际次数按自己的运行记录填写。截图里的“工具结果已加入上下文”和紧接着的“Agent 即将请求模型”，展示了循环的后半段。第一类日志记录 Agent 到达一轮模型调用的位置，第二类日志记录一条工具结果写入上下文。
 
+![截图5](assets/5.png)
+
 **截图要求 S5：**  显示会话 A 的输入指令、Pi 最终回复和实际出现的 [P4] 日志。结合日志记录是否调用了工具，以及进入了几轮模型调用。
+
+![截图6](assets/5.png)
 
 **截图要求 S6：**  显示会话 B 的输入指令、`read` 工具读取 practice4.txt 的记录、Pi 返回的实验代号，以及实际出现的两类 [P4] 日志。终端一屏放不下时，可按发生顺序提交 S6a、S6b 等截图，并在报告中按顺序抄录日志。
 
@@ -97,9 +103,9 @@ node .\packages\coding-agent\dist\cli.js
 
 ---
 
-## 报告答案（作业提交第 3 条）
+## 问题回答
 
-### 会话 A（直接问答）
+### 会话A
 
 - 输入指令：`请直接用一句话解释什么是 Git 分支。`
 - 是否调用工具：否，没有出现工具调用或工具结果日志。
@@ -110,9 +116,9 @@ node .\packages\coding-agent\dist\cli.js
   ```
 
 - 模型调用轮数：1 轮。
-- 最终回复：`<粘贴 A 的实际回复>`
+- 最终回复：`Git 分支是一个可以独立移动的指针，它指向某次提交，让你能在不影响其他工作的情况下，沿着这条指针指向的提交历史继续添加新提交。`
 
-### 会话 B（读取文件）
+### 会话B
 
 - 输入指令：`请用 read 工具读取当前目录的 practice4.txt，并告诉我文件中的实验代号。`
 - 是否调用工具：是，调用了一次 `read`。
@@ -125,7 +131,7 @@ node .\packages\coding-agent\dist\cli.js
   ```
 
 - 模型调用轮数：2 轮。
-- 最终回复：`<粘贴 B 的实际回复，应包含文件中的实验代号>`
+- 最终回复：`文件 practice4.txt 只有一行内容，实验代号是：pi-agent-practice-4`
 
 ### 对比结论
 
@@ -152,5 +158,4 @@ flowchart TD
     CA --> U
 ```
 
-关系概括：`coding-agent` 负责界面与工具实现，`agent` 负责循环调度，`ai` 负责模型调用，真正的推理在远程模型服务完成；读取文件的是本地工具，模型只负责决定调用它并使用返回结果。
 
