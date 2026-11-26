@@ -14,6 +14,8 @@
 
 **图 1：单轮工具调用的代码级时序图。**  以实际读取 `handoff.txt` 的那一轮为例。主图可按职责用五条生命线：用户、交互与会话层、Agent 执行层、模型请求层、`read` 工具。生命线可以合并同一层的对象，箭头和注释要写真实的函数或语句。用自调用或注释标出同一层中的跨文件调用。
 
+Mermaid 源文件：[assets/figure1-sequence.mmd](assets/figure1-sequence.mmd)
+
 ```mermaid
 sequenceDiagram
     actor U as 用户
@@ -73,6 +75,8 @@ A 阶段已经让 Pi 读到了启动命令。现在退出 Pi，再启动它，�
 
 - 左边画恢复旧会话。 退出 Pi 后加 -c 重新启动 → Pi 打开 A 阶段保存的会话文件 → Pi 从文件中恢复历史消息 → 用户输入“请起草 README 的启动说明” → Pi 把恢复出的历史消息和这次提问一起用于请求模型。
 - 右边画新建会话。 输入 /new → Pi 创建一个聊天历史为空的新会话 → 用户输入完全相同的提问 → Pi 用这次提问请求模型，新会话的聊天历史里没有 A 阶段读到的启动命令。
+
+Mermaid 源文件：[assets/figure2-session.mmd](assets/figure2-session.mmd)
 
 ```mermaid
 flowchart TD
