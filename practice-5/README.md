@@ -1,0 +1,98 @@
+# 实践 05｜Pi Agent 源码泛读与功能定位
+
+**任务**：从真实的 Pi 操作回到源码，弄清楚功能入口、调用路径和适合修改的位置。
+
+> 姓名：`<姓名>`　学号：`<学号>`　组别：`<组别>`　个人仓库：`<个人仓库地址>`
+
+## A. 单轮交互与工具调用（复用实践 04）
+
+在工作目录中创建 `handoff.txt`，写入两行，例如“待办：补充 README 的启动说明”“启动命令：npm run demo -- --profile river-731”。同学在具体做的时候把 river-731 换成本组随机生成的标识，提问中不要透露命令。启动本地构建的 Pi，在新会话输入：
+
+> 请用 read 工具读取当前目录的 handoff.txt，原样告诉我待办和启动命令。
+
+![截图 A：read 工具调用与回复](assets/placeholder-A.png)
+
+一次用户输入是一轮交互，其中可能发生多次模型调用。若工具实际执行多次，按观察记录。若没有任何工具事件，检查文件位置与工具配置，重跑后再画图。实践 04 已有等价证据的组可直接复用。
+
+**图 1：单轮工具调用的代码级时序图。**  以实际读取 `handoff.txt` 的那一轮为例。主图可按职责用五条生命线：用户、交互与会话层、Agent 执行层、模型请求层、`read` 工具。生命线可以合并同一层的对象，箭头和注释要写真实的函数或语句。用自调用或注释标出同一层中的跨文件调用。
+
+```mermaid
+sequenceDiagram
+    actor U as 用户
+    participant I as 交互与会话层<br/>interactive-mode.ts
+    participant A as Agent 执行层<br/>agent.ts / agent-loop.ts
+    participant M as 模型请求层<br/>ai 包适配器
+    participant R as 远程模型服务
+    participant T as read 工具<br/>core/tools/read.ts
+    participant FS as 文件系统
+
+    U->>I: 输入指令并回车
+    I->>I: editor.onSubmit(text)
+    I->>A: session.prompt(text) → Agent.prompt()
+    A->>A: runAgentLoop(...)
+    A->>M: streamFunction(model, llmContext)
+    M->>R: 发送请求（含工具定义）
+    R-->>M: 流式返回 toolCall（name=read）
+    M-->>A: AssistantMessage（toolCall）
+    A->>T: executeToolCalls → read(path)
+    T->>FS: createReadStream → selectLinesFromStream
+    FS-->>T: 分块读取文件内容
+    T-->>A: ToolResultMessage
+    A->>A: currentContext.messages.push(result)
+    A->>M: 第二次 streamFunction（上下文含工具结果）
+    M->>R: 发送请求（历史消息 + 工具结果）
+    R-->>M: 流式返回最终回答
+    M-->>A: message_update / message_end 事件
+    A-->>I: emit message_update / message_end
+    I->>I: streamingComponent.updateContent / 渲染
+    I-->>U: 显示最终回复
+```
+
+提示：
+- **输入入口**：`interactive-mode.ts` 的编辑器 `onSubmit`  
+- **启动循环**：`agent.ts` 的 `Agent.prompt()`  
+- **模型与文件边界**：在模型请求层标明适配器与远端模型之间的请求和响应。文件系统调用标在 `read` 工具下，按源码核对实际走的是流式读取还是缓冲区读取。
+- **显示回复**：回到 `interactive-mode.ts`，定位会话订阅和处理 `message_update` 或 `message_end` 的分支，标出用户看到回复的位置。
+
+## B.恢复上次会话，继续写 README
+ 
+A 阶段已经让 Pi 读到了启动命令。现在退出 Pi，再启动它，比较“接着原会话问”和“另开新会话问”这两种情况。
+
+1. 恢复原会话。 退出 Pi，在同一个项目目录用原来的本地启动命令加上 -c (--continue 的简写) 重新打开(`node .\packages\coding-agent\dist\cli.js -c` ) 确认终端里能看到 A 阶段的聊天记录。然后输入：“接着上次的待办，给 README 起草一条启动说明，写出交接单里的完整启动命令。只用这次会话已有的信息。不要调用工具。如果缺少命令，请直接说明。”
+
+2. 新建会话。 用 /new 开始新会话，在同一个项目目录、用同一个模型输入完全相同的话。记录两次各自的答案和有没有调用工具。恢复后的回答如果包含 A 的完整命令且没有重新读文件，就有证据支持它使用了已恢复的会话历史。若实际又读了文件或回答不符合预期，照实记录。
+
+![截图 B：恢复会话与新建会话对比](assets/placeholder-B.png)
+
+3. 对应到源码。 画图2（如下）
+
+**图2: 恢复旧会话和新建会话的对照图。**  
+画一张有两条分支的流程图，说明 Pi 在两种情况下会把哪些聊天消息发给模型。
+
+两条分支都从 A 阶段已经结束，Pi 已经读到并回答了启动命令 开始。
+
+- 左边画恢复旧会话。 退出 Pi 后加 -c 重新启动 → Pi 打开 A 阶段保存的会话文件 → Pi 从文件中恢复历史消息 → 用户输入“请起草 README 的启动说明” → Pi 把恢复出的历史消息和这次提问一起用于请求模型。
+- 右边画新建会话。 输入 /new → Pi 创建一个聊天历史为空的新会话 → 用户输入完全相同的提问 → Pi 用这次提问请求模型，新会话的聊天历史里没有 A 阶段读到的启动命令。
+
+```mermaid
+flowchart TD
+    S["A 阶段结束：Pi 已读到并回答启动命令"] --> C{启动方式}
+
+    C -- "node .\\packages\\coding-agent\\dist\\cli.js -c" --> R1[打开 A 阶段保存的会话文件]
+    R1 --> R2[从会话文件恢复历史消息]
+    R2 --> R3["用户输入：起草 README 的启动说明"]
+    R3 --> R4["请求模型：恢复的历史消息 + 本次提问"]
+    R4 --> R5[模型可引用 A 阶段的完整启动命令]
+
+    C -- "/new" --> N1[创建聊天历史为空的新会话]
+    N1 --> N2["用户输入：同一句提问"]
+    N2 --> N3["请求模型：仅本次提问"]
+    N3 --> N4[新会话历史中没有 A 阶段的启动命令]
+```
+
+
+## 作业提交
+
+在个人作业仓库提交一份 `practive-05.md`。报告须包含以下图1，图2，可进一步增加解释/文字说明。
+
+由个人在[课程作业仓库](https://github.com/hunnuOpenSourceSoftware2026/assignments/issues)提交一条 Issue，标题用 `实践课5：Pi Agent工具调用与会话恢复 [姓名拼音]`，正文附作业链接。
