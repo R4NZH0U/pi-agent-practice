@@ -13,9 +13,9 @@
 
 ## 仓库与版本
 
-- 仓库地址：`<你的小组组织内 fork 的仓库地址>`
+- 仓库地址：`https://github.com/System-Analysis-Homework/pi-hunnu-2026`
 - 分支：`main`
-- 提交编号：`<提交编号 SHA>`
+- 提交编号：`c3cc91632d0a1950fb122605b190233f2aa0006e`
 
 ## 环境要求
 
@@ -54,62 +54,9 @@ git --version
 
 **截图要求 S1：** 显示当前环境依赖的各个版本。
 
-![截图 S1：Node.js、npm、Git 版本](assets/placeholder-S1-env.png)
+![截图 S1：Node.js、npm、Git 版本](assets/1.png)
 
 *图 S1 环境版本检查结果：Node.js `<版本>`，npm `<版本>`，Git `<版本>`。*
-
-### 2. 安装 Node.js 24 LTS
-
-已安装合适版本可跳过；需要安装时：
-
-1. 打开 Node.js 官方下载页面。
-2. 选择 **Node.js 24 LTS**，使用该系列可用的最新补丁版本。若教师指定统一版本，按指定版本安装。
-3. 常见 Intel、AMD 电脑选择 **x64**；Windows ARM 电脑选择 **ARM64**。
-4. 下载 **Windows Installer（`.msi`）** 并双击运行。
-5. 按提示安装，保留默认目录和组件，确认勾选 **Node.js runtime**、**npm package manager** 和 **Add to PATH**。
-6. 原生模块开发工具本次可暂不勾选，遇到具体编译任务时再安装。
-7. 安装完成后关闭原终端，重新打开 PowerShell；使用 VS Code 内置终端时建议重新打开 VS Code。
-
-npm 随 Node.js 官方安装程序一起安装，无需另外下载。重新检查：
-
-```powershell
-node --version
-npm --version
-node -e "console.log('Hello, Node.js!')"
-```
-
-最后一条命令应输出 `Hello, Node.js!`。版本号按实际结果记录即可。
-
-### 3. 已使用 fnm 时：切换到 Node.js 24
-
-`fnm` 是 Node.js 版本管理工具，以下命令仅适用于已安装并配置好 fnm 的环境。
-
-```powershell
-fnm --version
-fnm install 24
-fnm use 24
-fnm default 24
-node -v
-npm -v
-```
-
-- `install`：下载指定版本系列。
-- `use`：切换当前终端使用的版本。
-- `default`：设置默认版本。
-
-若提示环境变量未设置，在当前会话执行：
-
-```powershell
-fnm env --use-on-cd --shell powershell | Out-String | Invoke-Expression
-```
-
-之后重新执行版本切换和检查。无需照抄截图中固定的 npm 版本，记录自己实际结果即可。
-
-**截图要求：** 显示切换后的 Node.js 与 npm 版本。
-
-![截图：使用 fnm 切换到 Node.js 24](assets/placeholder-node24.png)
-
-*图 使用 fnm 切换到 Node.js 24 后的版本输出。*
 
 ---
 
@@ -138,7 +85,7 @@ git status --short
 
 **截图要求 S2：** 显示当前目录、远端地址、分支和提交编号。仅打开 GitHub 网页不能证明源码已下载到本地。
 
-![截图 S2：源码来源与版本](assets/placeholder-S2-source.png)
+![截图 S2：源码来源与版本](assets/2.png)
 
 *图 S2 当前目录、远端地址、分支与提交编号。*
 
@@ -173,13 +120,16 @@ git status --short
 **报告需回答：**
 
 - Node.js 版本要求在哪里？
-- `npm run build` 实际从哪里读取命令？
+- 在仓库根目录 package.json 的 engines.node 字段中，声明为 >=22.19.0；不是根据截图或文档推测的。
 
-![截图 S3-1：engines 字段](assets/placeholder-S3-engines.png)
+- `npm run build` 实际从哪里读取命令？
+- 从仓库根目录 package.json 的 scripts.build 读取。该脚本依次进入多个子包执行各包自己的 npm run build（&& 表示前一步成功才继续），并非 npm 对所有项目执行同一套编译流程。
+
+![截图 S3-1：engines 字段](assets/3.1.png)
 
 *图 S3-1 根 `package.json` 中的 `engines.node`。*
 
-![截图 S3-2：build 脚本](assets/placeholder-S3-build-script.png)
+![截图 S3-2：build 脚本](assets/3.2.png)
 
 *图 S3-2 根 `package.json` 中的 `scripts.build`。*
 
@@ -206,7 +156,7 @@ npm install --ignore-scripts
 
 **截图要求 S4：** 显示安装结束的输出结果，应区分警告与导致命令失败的错误。
 
-![截图 S4：依赖安装结果](assets/placeholder-S4-install.png)
+![截图 S4：依赖安装结果](assets/4.png)
 
 *图 S4 `npm install --ignore-scripts` 的安装结果（退出码 `<退出码>`）。*
 
@@ -234,7 +184,9 @@ npm run build
 
 **截图要求：** 显示构建过程日志。
 
-![截图：npm run build 过程](assets/placeholder-build-progress.png)
+![截图：npm run build 过程](assets/5.1.png)
+
+![截图：npm run build 过程](assets/5.2.png)
 
 *图 `npm run build` 依次进入多个子包并生成模型目录数据。*
 
@@ -251,7 +203,7 @@ node .\packages\coding-agent\dist\bundle\cli.js --version
 
 **截图要求 S5：** 显示完整构建结束的最后一段输出、退出码 `0`、入口文件存在，以及通过本地路径运行得到的版本号。某一个子包成功不能代表根构建全部成功；只有版本号也不能证明已完成本次构建。
 
-![截图 S5：构建结果与产物验证](assets/placeholder-S5-build-verify.png)
+![截图 S5：构建结果与产物验证](assets/5.3.png)
 
 *图 S5 构建结束输出、退出码、入口文件存在性检查与本地版本号。*
 
@@ -305,14 +257,20 @@ node .\packages\coding-agent\dist\bundle\cli.js
 
 **截图要求 S6：** 显示 `.\pi-test.bat` 的启动命令或相关终端上下文、Pi 界面、自己的提示词和实际模型回复，可分为多张截图。不要提交 API Key、`auth.json` 或授权回调地址。
 
-![截图 S6-1：本地源码启动与交互界面](assets/placeholder-S6-session.png)
+![截图 S6-1：本地源码启动](assets/6.1.png)
+
+![截图 S6-2：交互界面](assets/6.2.png)
 
 *图 S6-1 通过 `.\pi-test.bat` 启动本地源码并完成一次会话。*
 
 **报告需回答：**
 
 - 本次如何确保运行的是本地源码？
+- 使用 .\pi-test.bat 启动，而不是直接输入 pi。该 .bat 调用同名 .ps1，由 Node.js 加载源码解析器并直接运行 packages/coding-agent/src/cli.ts；同时用 .\pi-test.bat --version 验证版本。直接输入 pi 可能启动第一次实践安装的全局版本，无法证明运行的是本地源码。本地源码版与全局版共用 ~/.pi/agent 配置，复用凭据不代表运行的是全局版本。
+
 - 源码入口与 `dist/bundle/cli.js` 入口分别适合什么场景？
+- 源码入口（.\pi-test.bat → src/cli.ts）：适合开发调试，修改 src 后可直接验证，不依赖构建产物。
+- dist/bundle/cli.js：适合运行已构建产物、验证构建结果或分发使用，运行前需先完成 npm run build，不要直接修改 dist（下次构建会被覆盖）。
 
 ---
 
@@ -351,4 +309,3 @@ node .\packages\coding-agent\dist\bundle\cli.js
 | 模型目录数据缺失 | `npm run build:offline` 提示数据缺失或过期 | 恢复网络执行 `npm run build`，或按错误提示补齐数据 |
 | 模型调用失败 | 程序启动成功但无模型回复 | 检查账户、网络与模型服务配置，与编译问题分开记录 |
 
-> 个人遇到的困难：`<描述具体问题、排查过程与最终解决方案，并附截图>`
